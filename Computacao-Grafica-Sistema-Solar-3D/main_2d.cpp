@@ -101,7 +101,7 @@ static void initialize (void)
   // create objects
   camera = Camera3D::Make(viewer_pos[0],viewer_pos[1],viewer_pos[2]);
   //camera->SetOrtho(true);
-  //arcball = camera->CreateArcball();
+  arcball = camera->CreateArcball();
 
   AppearancePtr white = Material::Make(1.0f,1.0f,1.0f);
   AppearancePtr red = Material::Make(1.0f,0.5f,0.5f);
@@ -120,48 +120,45 @@ static void initialize (void)
   // Define a different shader for texture mapping
   // An alternative would be to use only this shader with a "white" texture for untextured objects
   ShaderPtr shd_tex = Shader::Make(sunLight,"world");
-  shd_tex->AttachVertexShader("./shaders/ilum_vert/vertex.glsl");
-  shd_tex->AttachFragmentShader("./shaders/ilum_vert/fragment.glsl");
+  shd_tex->AttachVertexShader("./shaders/ilum_vert/vertex_texture.glsl");
+  shd_tex->AttachFragmentShader("./shaders/ilum_vert/fragment_texture.glsl");
   shd_tex->Link();
 
   //Moon setup
-  //auto moonSpriteTex = Texture::Make("face", "images/Moon.png");
+  auto moonSpriteTex = Texture::Make("decal", "images/moonmap.jpg");
   auto moonTrf = Transform::Make();
   moonTrf->Scale(0.1f, 0.1f, 0.1f);
-  auto moon = Node::Make(moonTrf, { white },{ Sphere::Make()}); //General and Sprite Node
+  auto moon = Node::Make(shd_tex, moonTrf, { moonSpriteTex, white }, { Sphere::Make() }); //General and Sprite Node
 
   //Earth Setup
-  //auto earthSpriteTex = Texture::Make("face", "images/Earth.png");
+  auto earthSpriteTex = Texture::Make("decal", "images/earth.jpg");
   auto earthSpriteTrf = Transform::Make();
   auto moonOrbitTrf = Transform::Make();
   earthSpriteTrf->Scale(0.4f, 0.4f, 0.4f);
 
-  auto earthSprite = Node::Make(earthSpriteTrf, { blue }, { Sphere::Make() }); //Earth Sprite Node
+  auto earthSprite = Node::Make(shd_tex, earthSpriteTrf, { earthSpriteTex, white }, { Sphere::Make() }); //Earth Sprite Node
   auto moonOrbit = Node::Make(moonOrbitTrf, { moon });
   auto earth = Node::Make({earthSprite, moonOrbit}); //General Earth Node
 
   //Mercury Setup
-  //auto mercurySpriteTex = Texture::Make("face", "images/Mercury.png");
+  auto mercurySpriteTex = Texture::Make("decal", "images/mercurymap.jpg");
   auto mercurySpriteTrf = Transform::Make();
   mercurySpriteTrf->Scale(0.2f, 0.2f, 0.2f);
   
-  auto mercurySprite = Node::Make(mercurySpriteTrf, { red }, { Sphere::Make() }); //Mercury Sprite Node
+  auto mercurySprite = Node::Make(shd_tex, mercurySpriteTrf, { mercurySpriteTex, white }, { Sphere::Make() }); //Mercury Sprite Node
   auto mercury = Node::Make({mercurySprite}); //General Mercury Node
   
   //Sun Setup
-  //auto sunSpriteTex = Texture::Make("face", "images/Sun.png");
-  auto sunTrf = Transform::Make();
+  auto sunSpriteTex = Texture::Make("decal", "images/sunmap.jpg");
+  auto sunSpriteTrf = Transform::Make();
   auto earthOrbitTrf = Transform::Make();
   auto mercuryOrbitTrf = Transform::Make();
-  //sunTrf->Translate(5.0f,5.0f,1.0f);
 
-  auto sunSprite = Node::Make(sunTrf, { yellow }, { Sphere::Make() }); //Sprite Node
-  //auto sunSpriteTextured = Node::Make(shd_tex, { sunSprite }); // assign texture shader to sprite
-  auto sunSpritelit = Node::Make(shd_sun, { sunSprite });
+  auto sunSprite = Node::Make(shd_sun, sunSpriteTrf, { sunSpriteTex, white }, { Sphere::Make() }); //Sprite Node
   auto earthOrbit = Node::Make(earthOrbitTrf, {earth}); //Orbit Node
   auto mercuryOrbit = Node::Make(mercuryOrbitTrf, {mercury}); //Orbit Node
 
-  auto sun = Node::Make(sunTrf, {sunSpritelit, earthOrbit, mercuryOrbit}); //General Sun Node
+  auto sun = Node::Make({sunSprite, earthOrbit, mercuryOrbit}); //General Sun Node
 
   //Space Setup
   //auto spaceSpriteTex = Texture::Make("face", "images/space.jpg");
@@ -172,12 +169,15 @@ static void initialize (void)
   //auto space = Node::Make( { sun, spaceSprite } ); //Space Node
 
   // build scene
-  auto root = Node::Make(shd_tex, { sun });
+  auto root = Node::Make({ sun });
   scene = Scene::Make(root);
   scene->AddEngine(OrbitTranslation::Make(earthOrbitTrf, 3.5f, 10.0f));
   scene->AddEngine(OrbitTranslation::Make(moonOrbitTrf, 0.8f, 20.0f));
   scene->AddEngine(OrbitTranslation::Make(mercuryOrbitTrf, 2.0f, 55.0f));
   scene->AddEngine(PlanetRotation::Make(earthSpriteTrf, 100.0f));
+  scene->AddEngine(PlanetRotation::Make(moonTrf, 50.0f));
+  scene->AddEngine(PlanetRotation::Make(mercurySpriteTrf, 80.0f));
+  scene->AddEngine(PlanetRotation::Make(sunSpriteTrf, 15.0f));
 }
 
 static void display (GLFWwindow* win)
@@ -258,7 +258,7 @@ int main ()
     assert(win);
     glfwSetFramebufferSizeCallback(win, resize);  // resize callback
     glfwSetKeyCallback(win, keyboard);            // keyboard callback
-    //glfwSetMouseButtonCallback(win, mousebutton); // mouse button callback
+    glfwSetMouseButtonCallback(win, mousebutton); // mouse button callback
 
     glfwMakeContextCurrent(win);
 #ifdef __glad_h_

@@ -73,6 +73,13 @@
     <None Include="images\.DS_Store" />
     <None Include="shaders\2d\fragment.glsl" />
     <None Include="shaders\2d\vertex.glsl" />
+    <None Include="shaders\ilum_vert\.DS_Store" />
+    <None Include="shaders\ilum_vert\fragment.glsl" />
+    <None Include="shaders\ilum_vert\fragment_sun.glsl" />
+    <None Include="shaders\ilum_vert\fragment_texture.glsl" />
+    <None Include="shaders\ilum_vert\vertex.glsl" />
+    <None Include="shaders\ilum_vert\vertex_sun.glsl" />
+    <None Include="shaders\ilum_vert\vertex_texture.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\earth-normal.png" />

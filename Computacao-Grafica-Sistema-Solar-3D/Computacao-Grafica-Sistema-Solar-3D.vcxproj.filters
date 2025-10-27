@@ -22,6 +22,9 @@
     <Filter Include="Source Files\images">
       <UniqueIdentifier>{ea6a6140-2d4a-4a96-b7bc-7d96b486410d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\shaders\ilum_vert">
+      <UniqueIdentifier>{bd3dcefe-dc7b-439d-b9d7-754c9a34b2f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="camera2d.cpp">
@@ -177,6 +180,27 @@
     </None>
     <None Include="images\.DS_Store">
       <Filter>Source Files\images</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\.DS_Store">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\fragment.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\fragment_sun.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\fragment_texture.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\vertex.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\vertex_sun.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="shaders\ilum_vert\vertex_texture.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

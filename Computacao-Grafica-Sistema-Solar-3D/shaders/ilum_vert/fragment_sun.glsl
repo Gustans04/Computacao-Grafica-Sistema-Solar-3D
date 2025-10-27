@@ -1,9 +1,14 @@
 #version 410
 
-uniform vec4 mdif; // material diffuse (set by Material::Load)
+in data {
+  vec4 color;
+  vec2 texcoord;
+} f;
 
-out vec4 outcolor;
+out vec4 color;
+
+uniform sampler2D decal;
 
 void main(void) {
-  outcolor = mdif;
+  color = f.color * texture(decal,f.texcoord);
 }
