@@ -28,8 +28,12 @@
 static float viewer_pos[3] = {0.0f, 0.0f, 10.0f};
 
 static ScenePtr scene;
-static Camera3DPtr camera;
-static ArcballPtr arcball;
+static Camera3DPtr camera;        // Main camera
+static Camera3DPtr earth_camera;  // Earth-Moon view camera
+static ArcballPtr arcball;        // Active arcball
+static ArcballPtr sun_arcball;    // Sun arcball
+static ArcballPtr earth_arcball;  // Earth-Moon camera arcball
+static bool using_earth_camera = false;  // Camera switch flag
 
 class OrbitTranslation;
 using OrbitTranslationPtr = std::shared_ptr<OrbitTranslation>;
@@ -89,6 +93,72 @@ public:
     }
 };
 
+class MoonCamera;
+using MoonCameraPtr = std::shared_ptr<MoonCamera>;
+
+class MoonCamera : public Engine
+{
+    TransformPtr m_trf;
+    float m_radius1;
+    float m_radius2;
+    float m_angle1;
+    float m_angle2;
+    float m_speed1;
+    float m_speed2;
+
+protected:
+    MoonCamera(TransformPtr trf, float radius1, float radius2, float speed1, float speed2)
+        : m_trf(trf), m_radius1(radius1), m_radius2(radius2), m_speed1(speed1), m_speed2(speed2), m_angle1(0.0f), m_angle2(0.0f)
+    {
+    }
+
+public:
+    static MoonCameraPtr Make(TransformPtr trf, float radius1, float radius2, float speed1, float speed2)
+    {
+        return MoonCameraPtr(new MoonCamera(trf, radius1, radius2, speed1, speed2));
+    }
+
+    virtual void Update(float dt)
+    {        
+        // // Get Earth's world position
+        // glm::mat4 earthMatrix = earthOrbitTrf->GetMatrix();
+        // glm::vec3 earthPos = glm::vec3(earthMatrix[3]); // Translation component
+
+        // // Get Moon's world position by combining Earth orbit, Moon orbit and Moon transforms
+        // glm::mat4 moonWorldMatrix = earthMatrix * moonOrbitTrf->GetMatrix() * moonTrf->GetMatrix();
+        // glm::vec3 moonPos = glm::vec3(moonWorldMatrix[3]);
+
+        // // Update Earth camera
+        // earth_camera->SetCenter(moonPos.x, moonPos.y, moonPos.z);
+        // earth_camera->SetEye(earthPos.x, earthPos.y, earthPos.z);
+        // earth_camera->SetUpDir(0.0f, 0.0f, 1.0f);
+
+        m_trf->LoadIdentity();
+
+        // Apply Earth orbit transformations to both transforms
+        m_angle1 += m_speed1 * -dt;
+        m_trf->Rotate(m_angle1, 0, 0, 1);
+        m_trf->Translate(m_radius1, 0.0f, 0.0f);
+
+        // Get Earth position from m_trf (which doesn't have Moon rotation)
+        glm::mat4 earthMatrix = m_trf->GetMatrix();
+        glm::vec3 earthPos = glm::vec3(earthMatrix[3]);
+
+        // Continue with Moon rotation
+        m_angle2 += m_speed2 * -dt;
+        m_trf->Rotate(m_angle2, 0, 0, 1);
+        m_trf->Translate(m_radius2, 0.0f, 0.0f);
+
+        // Get Moon position from m_trf (which has all transformations)
+        glm::mat4 moonMatrix = m_trf->GetMatrix();
+        glm::vec3 moonPos = glm::vec3(moonMatrix[3]);
+
+        // Update camera
+        earth_camera->SetEye(earthPos.x, earthPos.y, earthPos.z);
+        earth_camera->SetCenter(moonPos.x, moonPos.y, moonPos.z);
+        earth_camera->SetUpDir(0.0f, 0.0f, 1.0f);
+    }
+};
 
 static void initialize (void)
 {
@@ -98,10 +168,15 @@ static void initialize (void)
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);  // cull back faces
 
-  // create objects
-  camera = Camera3D::Make(viewer_pos[0],viewer_pos[1],viewer_pos[2]);
-  //camera->SetOrtho(true);
-  arcball = camera->CreateArcball();
+  // create cameras
+  camera = Camera3D::Make(viewer_pos[0], viewer_pos[1], viewer_pos[2]);
+  sun_arcball = camera->CreateArcball();
+  arcball = sun_arcball; // Set active arcball to sun arcball
+
+  // Earth-Moon camera starts at same position but will be updated
+  earth_camera = Camera3D::Make(viewer_pos[0], viewer_pos[1], viewer_pos[2]);
+  earth_arcball = earth_camera->CreateArcball();
+  TransformPtr earthCameraTrf = Transform::Make();
 
   MaterialPtr white = Material::Make(1.0f,1.0f,1.0f);
   white->SetSpecular(0.0f,0.0f,0.0f); // remove pontos de brilho nos astros
@@ -130,7 +205,7 @@ static void initialize (void)
   //Earth Setup
   auto earthSpriteTex = Texture::Make("decal", "images/earth.jpg");
   auto earthSpriteTrf = Transform::Make();
-  auto moonOrbitTrf = Transform::Make();
+  auto moonOrbitTrf = Transform::Make();  // Store moon orbit transform
   earthSpriteTrf->Scale(0.4f, 0.4f, 0.4f);
 
   auto earthSprite = Node::Make(shd_tex, earthSpriteTrf, { earthSpriteTex, white }, { Sphere::Make() }); //Earth Sprite Node
@@ -148,7 +223,7 @@ static void initialize (void)
   //Sun Setup
   auto sunSpriteTex = Texture::Make("decal", "images/sunmap.jpg");
   auto sunSpriteTrf = Transform::Make();
-  auto earthOrbitTrf = Transform::Make();
+  auto earthOrbitTrf = Transform::Make();  // Store earth orbit transform
   auto mercuryOrbitTrf = Transform::Make();
 
   auto sunSprite = Node::Make(shd_sun, sunSpriteTrf, { sunSpriteTex, white }, { Sphere::Make() }); //Sprite Node
@@ -175,27 +250,42 @@ static void initialize (void)
   scene->AddEngine(PlanetRotation::Make(moonTrf, 50.0f));
   scene->AddEngine(PlanetRotation::Make(mercurySpriteTrf, 80.0f));
   scene->AddEngine(PlanetRotation::Make(sunSpriteTrf, 15.0f));
+  scene->AddEngine(MoonCamera::Make(earthCameraTrf, 3.5f, 0.8f, 10.0f, 20.0f));
 }
 
 static void display (GLFWwindow* win)
 { 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear window 
-  Error::Check("before render");
-  scene->Render(camera);
-  Error::Check("after render");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear window 
+    Error::Check("before render");
+    
+    // Render with the active camera
+    scene->Render(using_earth_camera ? earth_camera : camera);
+    
+    Error::Check("after render");
 }
 
 static void error (int code, const char* msg)
 {
-  printf("GLFW error %d: %s\n", code, msg);
-  glfwTerminate();
-  exit(0);
+    printf("GLFW error %d: %s\n", code, msg);
+    glfwTerminate();
+    exit(0);
+}
+
+static void mudar_camera(void)
+{
+    using_earth_camera = !using_earth_camera;
+    
+    // Switch active arcball
+    arcball = using_earth_camera ? earth_arcball : sun_arcball;
 }
 
 static void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_Q && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+  if (key == GLFW_KEY_E && action == GLFW_PRESS)
+    mudar_camera();
 }
 
 static void resize (GLFWwindow* win, int width, int height)
@@ -226,7 +316,7 @@ static void cursorinit (GLFWwindow* win, double x, double y)
 }
 static void mousebutton (GLFWwindow* win, int button, int action, int mods)
 {
-  if (action == GLFW_PRESS) {
+  if (action == GLFW_PRESS && !using_earth_camera) {
     glfwSetCursorPosCallback(win, cursorinit);     // cursor position callback
   }
   else // GLFW_RELEASE 
