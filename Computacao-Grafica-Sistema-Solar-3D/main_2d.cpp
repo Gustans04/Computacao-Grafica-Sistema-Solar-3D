@@ -7,22 +7,29 @@
 #endif
 #include <GLFW/glfw3.h>
 
+#include "arcball.h"
 #include "scene.h"
 #include "state.h"
-#include "camera2d.h"
+#include "camera3d.h"
 #include "color.h"
+#include "material.h"
 #include "transform.h"
 #include "error.h"
 #include "shader.h"
 #include "triangle.h"
-#include "disk.h"
+#include "sphere.h"
 #include "texture.h"
 #include "quad.h"
+#include "light.h"
 
 #include <iostream>
+#include <cassert>
+
+static float viewer_pos[3] = {0.0f, 0.0f, 10.0f};
 
 static ScenePtr scene;
-static CameraPtr camera;
+static Camera3DPtr camera;
+static ArcballPtr arcball;
 
 class OrbitTranslation;
 using OrbitTranslationPtr = std::shared_ptr<OrbitTranslation>;
@@ -89,62 +96,83 @@ static void initialize (void)
   glClearColor(0, 0, 0, 0);
   // enable depth test 
   glEnable(GL_DEPTH_TEST);
-
-  auto shader = Shader::Make();
-  shader->AttachVertexShader("./shaders/2d/vertex.glsl");
-  shader->AttachFragmentShader("./shaders/2d/fragment.glsl");
-  shader->Link();
+  glEnable(GL_CULL_FACE);  // cull back faces
 
   // create objects
-  camera = Camera2D::Make(0,10,0,10);
+  camera = Camera3D::Make(viewer_pos[0],viewer_pos[1],viewer_pos[2]);
+  //camera->SetOrtho(true);
+  //arcball = camera->CreateArcball();
+
+  AppearancePtr white = Material::Make(1.0f,1.0f,1.0f);
+  AppearancePtr red = Material::Make(1.0f,0.5f,0.5f);
+  AppearancePtr yellow = Material::Make(1.0f,0.8f,0.0f);
+  AppearancePtr blue = Material::Make(0.5f,0.5f,1.0f);
+  AppearancePtr black = Material::Make(0.0f,0.0f,0.0f);
+
+  LightPtr sunLight = Light::Make(0.0f, 0.0f, 0.0f, 1.0f, "object");
+
+  // create shader for sun that is allways fully lit
+  ShaderPtr shd_sun = Shader::Make(nullptr, "world");
+  shd_sun->AttachVertexShader("./shaders/ilum_vert/vertex_sun.glsl");
+  shd_sun->AttachFragmentShader("./shaders/ilum_vert/fragment_sun.glsl");
+  shd_sun->Link();
+
+  // Define a different shader for texture mapping
+  // An alternative would be to use only this shader with a "white" texture for untextured objects
+  ShaderPtr shd_tex = Shader::Make(sunLight,"world");
+  shd_tex->AttachVertexShader("./shaders/ilum_vert/vertex.glsl");
+  shd_tex->AttachFragmentShader("./shaders/ilum_vert/fragment.glsl");
+  shd_tex->Link();
 
   //Moon setup
-  auto moonSpriteTex = Texture::Make("face", "images/Moon.png");
+  //auto moonSpriteTex = Texture::Make("face", "images/Moon.png");
   auto moonTrf = Transform::Make();
-  moonTrf->Scale(0.1f, 0.1f, 1.0f);
-  auto moon = Node::Make(moonTrf, { moonSpriteTex },{ Disk::Make()}); //General and Sprite Node
+  moonTrf->Scale(0.1f, 0.1f, 0.1f);
+  auto moon = Node::Make(moonTrf, { white },{ Sphere::Make()}); //General and Sprite Node
 
   //Earth Setup
-  auto earthSpriteTex = Texture::Make("face", "images/Earth.png");
+  //auto earthSpriteTex = Texture::Make("face", "images/Earth.png");
   auto earthSpriteTrf = Transform::Make();
   auto moonOrbitTrf = Transform::Make();
-  earthSpriteTrf->Scale(0.4f, 0.4f, 1.0f);
+  earthSpriteTrf->Scale(0.4f, 0.4f, 0.4f);
 
-  auto earthSprite = Node::Make(earthSpriteTrf, { earthSpriteTex }, { Disk::Make() }); //Earth Sprite Node
+  auto earthSprite = Node::Make(earthSpriteTrf, { blue }, { Sphere::Make() }); //Earth Sprite Node
   auto moonOrbit = Node::Make(moonOrbitTrf, { moon });
   auto earth = Node::Make({earthSprite, moonOrbit}); //General Earth Node
 
   //Mercury Setup
-  auto mercurySpriteTex = Texture::Make("face", "images/Mercury.png");
+  //auto mercurySpriteTex = Texture::Make("face", "images/Mercury.png");
   auto mercurySpriteTrf = Transform::Make();
-  mercurySpriteTrf->Scale(0.2f, 0.2f, 1.0f);
+  mercurySpriteTrf->Scale(0.2f, 0.2f, 0.2f);
   
-  auto mercurySprite = Node::Make(mercurySpriteTrf, { mercurySpriteTex }, { Disk::Make() }); //Mercury Sprite Node
+  auto mercurySprite = Node::Make(mercurySpriteTrf, { red }, { Sphere::Make() }); //Mercury Sprite Node
   auto mercury = Node::Make({mercurySprite}); //General Mercury Node
   
   //Sun Setup
-  auto sunSpriteTex = Texture::Make("face", "images/Sun.png");
+  //auto sunSpriteTex = Texture::Make("face", "images/Sun.png");
   auto sunTrf = Transform::Make();
   auto earthOrbitTrf = Transform::Make();
   auto mercuryOrbitTrf = Transform::Make();
-  sunTrf->Translate(5.0f,5.0f,1.0f);
+  //sunTrf->Translate(5.0f,5.0f,1.0f);
 
-  auto sunSprite = Node::Make({ sunSpriteTex }, { Disk::Make() }); //Sprite Node
+  auto sunSprite = Node::Make(sunTrf, { yellow }, { Sphere::Make() }); //Sprite Node
+  //auto sunSpriteTextured = Node::Make(shd_tex, { sunSprite }); // assign texture shader to sprite
+  auto sunSpritelit = Node::Make(shd_sun, { sunSprite });
   auto earthOrbit = Node::Make(earthOrbitTrf, {earth}); //Orbit Node
   auto mercuryOrbit = Node::Make(mercuryOrbitTrf, {mercury}); //Orbit Node
 
-  auto sun = Node::Make(sunTrf, {sunSprite, earthOrbit, mercuryOrbit}); //General Sun Node
+  auto sun = Node::Make(sunTrf, {sunSpritelit, earthOrbit, mercuryOrbit}); //General Sun Node
 
   //Space Setup
-  auto spaceSpriteTex = Texture::Make("face", "images/space.jpg");
-  auto spaceTrf = Transform::Make();
-  spaceTrf->Translate(-5.0f, 0.0f, 0.0f);
-  spaceTrf->Scale(20.0f, 10.0f, 1.0f);
-  auto spacePrite = Node::Make(spaceTrf, { spaceSpriteTex }, { Quad::Make() }); //Space Sprite Node
-  auto space = Node::Make( { sun, spacePrite } ); //Space Node
+  //auto spaceSpriteTex = Texture::Make("face", "images/space.jpg");
+  //auto spaceTrf = Transform::Make();
+  //spaceTrf->Translate(-5.0f, -5.0f, 0.0f);
+  //spaceTrf->Scale(20.0f, 10.0f, 1.0f);
+  //auto spaceSprite = Node::Make(spaceTrf, { black }, { Quad::Make() }); //Space Sprite Node
+  //auto space = Node::Make( { sun, spaceSprite } ); //Space Node
 
   // build scene
-  auto root = Node::Make(shader, { space });
+  auto root = Node::Make(shd_tex, { sun });
   scene = Scene::Make(root);
   scene->AddEngine(OrbitTranslation::Make(earthOrbitTrf, 3.5f, 10.0f));
   scene->AddEngine(OrbitTranslation::Make(moonOrbitTrf, 0.8f, 20.0f));
@@ -178,6 +206,36 @@ static void resize (GLFWwindow* win, int width, int height)
   glViewport(0,0,width,height);
 }
 
+static void cursorpos (GLFWwindow* win, double x, double y)
+{
+  // convert screen pos (upside down) to framebuffer pos (e.g., retina displays)
+  int wn_w, wn_h, fb_w, fb_h;
+  glfwGetWindowSize(win, &wn_w, &wn_h);
+  glfwGetFramebufferSize(win, &fb_w, &fb_h);
+  x = x * fb_w / wn_w;
+  y = (wn_h - y) * fb_h / wn_h;
+  arcball->AccumulateMouseMotion(int(x),int(y));
+}
+static void cursorinit (GLFWwindow* win, double x, double y)
+{
+  // convert screen pos (upside down) to framebuffer pos (e.g., retina displays)
+  int wn_w, wn_h, fb_w, fb_h;
+  glfwGetWindowSize(win, &wn_w, &wn_h);
+  glfwGetFramebufferSize(win, &fb_w, &fb_h);
+  x = x * fb_w / wn_w;
+  y = (wn_h - y) * fb_h / wn_h;
+  arcball->InitMouseMotion(int(x),int(y));
+  glfwSetCursorPosCallback(win, cursorpos);     // cursor position callback
+}
+static void mousebutton (GLFWwindow* win, int button, int action, int mods)
+{
+  if (action == GLFW_PRESS) {
+    glfwSetCursorPosCallback(win, cursorinit);     // cursor position callback
+  }
+  else // GLFW_RELEASE 
+    glfwSetCursorPosCallback(win, nullptr);      // callback disabled
+}
+
 static void update (float dt)
 {
   scene->Update(dt);
@@ -200,6 +258,7 @@ int main ()
     assert(win);
     glfwSetFramebufferSizeCallback(win, resize);  // resize callback
     glfwSetKeyCallback(win, keyboard);            // keyboard callback
+    //glfwSetMouseButtonCallback(win, mousebutton); // mouse button callback
 
     glfwMakeContextCurrent(win);
 #ifdef __glad_h_
