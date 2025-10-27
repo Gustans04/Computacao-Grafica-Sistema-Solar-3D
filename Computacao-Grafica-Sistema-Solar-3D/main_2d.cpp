@@ -103,11 +103,8 @@ static void initialize (void)
   //camera->SetOrtho(true);
   arcball = camera->CreateArcball();
 
-  AppearancePtr white = Material::Make(1.0f,1.0f,1.0f);
-  AppearancePtr red = Material::Make(1.0f,0.5f,0.5f);
-  AppearancePtr yellow = Material::Make(1.0f,0.8f,0.0f);
-  AppearancePtr blue = Material::Make(0.5f,0.5f,1.0f);
-  AppearancePtr black = Material::Make(0.0f,0.0f,0.0f);
+  MaterialPtr white = Material::Make(1.0f,1.0f,1.0f);
+  white->SetSpecular(0.0f,0.0f,0.0f); // remove pontos de brilho nos astros
 
   LightPtr sunLight = Light::Make(0.0f, 0.0f, 0.0f, 1.0f, "object");
 
