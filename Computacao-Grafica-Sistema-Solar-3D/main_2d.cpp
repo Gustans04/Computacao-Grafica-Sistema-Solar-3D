@@ -89,7 +89,7 @@ public:
 
     virtual void Update(float dt)
     {
-        m_trf->Rotate(m_speed * -dt, 0, 0, 1);
+        m_trf->Rotate(m_speed * -dt, 0, 1, 0);
     }
 };
 
@@ -196,19 +196,29 @@ static void initialize (void)
   shd_tex->AttachFragmentShader("./shaders/ilum_vert/fragment_texture.glsl");
   shd_tex->Link();
 
+  // Create a shader with bump mapping
+  ShaderPtr shd_bump = Shader::Make(sunLight,"world");
+  shd_bump->AttachVertexShader("./shaders/ilum_vert/vertex_bump.glsl");
+  shd_bump->AttachFragmentShader("./shaders/ilum_vert/fragment_bump.glsl");
+  shd_bump->Link();
+
   //Moon setup
   auto moonSpriteTex = Texture::Make("decal", "images/moonmap.jpg");
+  auto moonNormalTex = Texture::Make("normalMap", "images/moon-normal.png");
   auto moonTrf = Transform::Make();
   moonTrf->Scale(0.1f, 0.1f, 0.1f);
-  auto moon = Node::Make(shd_tex, moonTrf, { moonSpriteTex, white }, { Sphere::Make() }); //General and Sprite Node
+  moonTrf->Rotate(90.0f, 1, 0, 0); // Tilt Moon axis
+  auto moon = Node::Make(shd_bump, moonTrf, { moonSpriteTex, moonNormalTex, white }, { Sphere::Make() }); //General and Sprite Node
 
   //Earth Setup
   auto earthSpriteTex = Texture::Make("decal", "images/earth.jpg");
+  auto earthNormalTex = Texture::Make("normalMap", "images/earth-normal.png");
   auto earthSpriteTrf = Transform::Make();
   auto moonOrbitTrf = Transform::Make();  // Store moon orbit transform
   earthSpriteTrf->Scale(0.4f, 0.4f, 0.4f);
+  earthSpriteTrf->Rotate(90.0f, 1, 0, 0); // Tilt Earth axis
 
-  auto earthSprite = Node::Make(shd_tex, earthSpriteTrf, { earthSpriteTex, white }, { Sphere::Make() }); //Earth Sprite Node
+  auto earthSprite = Node::Make(shd_bump, earthSpriteTrf, { earthSpriteTex, earthNormalTex, white }, { Sphere::Make() }); //Earth Sprite Node
   auto moonOrbit = Node::Make(moonOrbitTrf, { moon });
   auto earth = Node::Make({earthSprite, moonOrbit}); //General Earth Node
 
@@ -216,6 +226,7 @@ static void initialize (void)
   auto mercurySpriteTex = Texture::Make("decal", "images/mercurymap.jpg");
   auto mercurySpriteTrf = Transform::Make();
   mercurySpriteTrf->Scale(0.2f, 0.2f, 0.2f);
+  mercurySpriteTrf->Rotate(90.0f, 1, 0, 0); // Tilt Mercury axis
   
   auto mercurySprite = Node::Make(shd_tex, mercurySpriteTrf, { mercurySpriteTex, white }, { Sphere::Make() }); //Mercury Sprite Node
   auto mercury = Node::Make({mercurySprite}); //General Mercury Node
@@ -225,6 +236,7 @@ static void initialize (void)
   auto sunSpriteTrf = Transform::Make();
   auto earthOrbitTrf = Transform::Make();  // Store earth orbit transform
   auto mercuryOrbitTrf = Transform::Make();
+  sunSpriteTrf->Rotate(90.0f, 1, 0, 0); // Tilt Sun axis
 
   auto sunSprite = Node::Make(shd_sun, sunSpriteTrf, { sunSpriteTex, white }, { Sphere::Make() }); //Sprite Node
   auto earthOrbit = Node::Make(earthOrbitTrf, {earth}); //Orbit Node
@@ -249,7 +261,7 @@ static void initialize (void)
   scene->AddEngine(PlanetRotation::Make(earthSpriteTrf, 100.0f));
   scene->AddEngine(PlanetRotation::Make(moonTrf, 50.0f));
   scene->AddEngine(PlanetRotation::Make(mercurySpriteTrf, 80.0f));
-  scene->AddEngine(PlanetRotation::Make(sunSpriteTrf, 15.0f));
+  scene->AddEngine(PlanetRotation::Make(sunSpriteTrf, 25.0f));
   scene->AddEngine(MoonCamera::Make(earthCameraTrf, 3.5f, 0.8f, 10.0f, 20.0f));
 }
 
