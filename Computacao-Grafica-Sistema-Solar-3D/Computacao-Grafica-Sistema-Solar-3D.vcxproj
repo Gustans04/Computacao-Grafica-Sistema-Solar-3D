@@ -40,6 +40,7 @@
     <ClCompile Include="quad.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="skybox.cpp" />
     <ClCompile Include="sphere.cpp" />
     <ClCompile Include="state.cpp" />
     <ClCompile Include="texbuffer.cpp" />
@@ -64,12 +65,16 @@
     <ClInclude Include="scene.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shape.h" />
+    <ClInclude Include="skybox.h" />
+    <ClInclude Include="sphere.h" />
     <ClInclude Include="state.h" />
+    <ClInclude Include="texcube.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="triangle.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="fragment_skybox.glsl" />
     <None Include="images\.DS_Store" />
     <None Include="shaders\2d\fragment.glsl" />
     <None Include="shaders\2d\vertex.glsl" />
@@ -80,6 +85,7 @@
     <None Include="shaders\ilum_vert\vertex.glsl" />
     <None Include="shaders\ilum_vert\vertex_sun.glsl" />
     <None Include="shaders\ilum_vert\vertex_texture.glsl" />
+    <None Include="vertex_skybox.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\earth-normal.png" />

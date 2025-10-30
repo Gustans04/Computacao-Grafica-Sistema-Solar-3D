@@ -114,6 +114,9 @@
     <ClCompile Include="disk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="appearance.h">
@@ -170,6 +173,15 @@
     <ClInclude Include="grid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="texcube.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="skybox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\2d\fragment.glsl">
@@ -200,6 +212,12 @@
       <Filter>Source Files\shaders\ilum_vert</Filter>
     </None>
     <None Include="shaders\ilum_vert\vertex_texture.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="vertex_skybox.glsl">
+      <Filter>Source Files\shaders\ilum_vert</Filter>
+    </None>
+    <None Include="fragment_skybox.glsl">
       <Filter>Source Files\shaders\ilum_vert</Filter>
     </None>
   </ItemGroup>

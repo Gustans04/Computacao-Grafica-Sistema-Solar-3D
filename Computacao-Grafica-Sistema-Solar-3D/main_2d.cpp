@@ -21,6 +21,8 @@
 #include "texture.h"
 #include "quad.h"
 #include "light.h"
+#include "texcube.h"
+#include "skybox.h"
 
 #include <iostream>
 #include <cassert>
@@ -162,8 +164,7 @@ public:
 
 static void initialize (void)
 {
-  // set background color: white 
-  glClearColor(0, 0, 0, 0);
+  glClearColor(0, 0, 0, 1);
   // enable depth test 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);  // cull back faces
@@ -201,6 +202,12 @@ static void initialize (void)
   shd_bump->AttachVertexShader("./shaders/ilum_vert/vertex_bump.glsl");
   shd_bump->AttachFragmentShader("./shaders/ilum_vert/fragment_bump.glsl");
   shd_bump->Link();
+
+  //create shader for skybox
+  ShaderPtr shd_sky = Shader::Make();
+  shd_sky->AttachVertexShader("./shaders/ilum_vert/vertex_skybox.glsl");
+  shd_sky->AttachFragmentShader("./shaders/ilum_vert/fragment_skybox.glsl");
+  shd_sky->Link();
 
   //Moon setup
   auto moonSpriteTex = Texture::Make("decal", "images/moonmap.jpg");
@@ -244,16 +251,13 @@ static void initialize (void)
 
   auto sun = Node::Make({sunSprite, earthOrbit, mercuryOrbit}); //General Sun Node
 
-  //Space Setup
-  //auto spaceSpriteTex = Texture::Make("face", "images/space.jpg");
-  //auto spaceTrf = Transform::Make();
-  //spaceTrf->Translate(-5.0f, -5.0f, 0.0f);
-  //spaceTrf->Scale(20.0f, 10.0f, 1.0f);
-  //auto spaceSprite = Node::Make(spaceTrf, { black }, { Quad::Make() }); //Space Sprite Node
-  //auto space = Node::Make( { sun, spaceSprite } ); //Space Node
+  //SkyBox Setup
+  AppearancePtr sky = TexCube::Make("sky", "images/space.png");
+  ShapePtr skybox = SkyBox::Make();
+  auto skyboxNode = Node::Make(shd_sky, { white,sky }, { skybox });
 
   // build scene
-  auto root = Node::Make({ sun });
+  auto root = Node::Make({ skyboxNode, sun });
   scene = Scene::Make(root);
   scene->AddEngine(OrbitTranslation::Make(earthOrbitTrf, 3.5f, 10.0f));
   scene->AddEngine(OrbitTranslation::Make(moonOrbitTrf, 0.8f, 20.0f));
